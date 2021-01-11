@@ -17,9 +17,6 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn import svm
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.externals.six import StringIO
-import pydotplus
-import matplotlib.image as mpimg
 from sklearn import tree
 from sklearn import metrics
 from sklearn.metrics import classification_report
@@ -323,21 +320,10 @@ def advanced_analysis(audioName,s_rate,cf,fl):
         t=[list(x) for x in p.values]
         user_feature_values=t[0]
         
-        dot_data = StringIO()
-        filename = f'musictree_{audioName}.png'
-        featureNames = fl[2:-2].split("', '")
-        targetNames = dataset["label"].unique().tolist()
-        out=tree.export_graphviz(musicTree,feature_names=featureNames, out_file=dot_data, filled=True, 
-                                 special_characters=True,rotate=False)  
-        graph = pydotplus.graph_from_dot_data(dot_data.getvalue())  
-        graph.write_png(f'./static/{filename}')
-        img = mpimg.imread(f'./static/{filename}')
-        plt.figure(figsize=(200, 400))
-        plt.imshow(img,interpolation='nearest')
-        
+       
         return render_template("advanced-analysis.html",prediction=prediction,audioName=audioName,
                 acc=acc,fd=user_feature_values,col=fl[2:-2].split("', '"),
-                saved_img1=saved_img1,saved_img2=saved_img2,sRate=srate,algo=algo,saved_img3=filename)
+                saved_img1=saved_img1,saved_img2=saved_img2,sRate=srate,algo=algo)
         
     else:
          return render_template("custom-analysis.html")
