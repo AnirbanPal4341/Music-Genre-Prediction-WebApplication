@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Genre Detection App</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+        <style>
+            .button {
+                margin-left: 0px;
+                padding: 10px 16px;
+                text-align: center;
+                text-decoration: none;
+                font-size: 14px;
+                transition-duration: 0.4s;
+                border-radius: 5px;
+                background-color: white;
+                color: black;
+                border: 2px solid #4CAF50;
+            }
+            .button:hover {
+                background-color: #4CAF50; /* Green */
+                color: white;
+                border-radius: 5px;
+                box-shadow: 0 12px 16px 0 rgba(0,0,0,0.2), 0 17px 50px 0 rgba(0,0,0,0.19);
+            }
+            .file{
+                padding: 7px 14px;
+                text-align: center;
+                text-decoration: none;
+                font-size: 14px;
+                transition-duration: 0.4s;
+                background-color: white;
+                color: black;
+                border: 2px solid #4CAF50;
+                border-radius: 5px;
+            }
+        </style>
+    </head>
+    <body style="display: flex; flex-wrap: nowrap;justify-content:center; margin-top: 8%;">
+        <div  id="box1">
+            <h1>Custom Music Genre Detection</h1>
+        <form action="" method="POST" enctype="multipart/form-data">
+            <p>Upload sound file:</p>
+            <input type="file" name="soundFile" class="file"/>
+            <br>
+            <label for="algo">Choose a classifier:</label>
+            <select name="algo" id="algo" class="file">
+                <option value="knn">K Neighbors Classifier</option>
+                <option value="lr">Logistic Regression</option>
+                <option value="svm">Support Vector Machines</option>
+                <option value="dt">Decsission Trees</option>
+            </select>
+            <label for="sr">Select sampling rate:</label>
+            <select name="sr" id="sr" class="file">
+                <option value="22050">22050</option>
+                <option value="44100">44100</option>
+            </select>
+            <br><br>
+            <!-- filename,chroma_stft,rmse,spectral_centroid,spectral_bandwidth,spectral_rolloff,zero_crossing_rate,mfcc1,mfcc2,mfcc3,mfcc4,mfcc5,
+            mfcc6,mfcc7,mfcc8,mfcc9,mfcc10,mfcc11,mfcc12,mfcc13,mfcc14,mfcc15,mfcc16,mfcc17,mfcc18,mfcc19,mfcc20,label -->
+            <p>Choose your feature list for classification:</p>
+            <div>
+                <input type="checkbox" name="featureList" value="chroma_stft" id="chroma_stft">
+                <label for="chroma_stft">chroma_stft</label>
+                <input type="checkbox" name="featureList" value="rmse" id="rmse">
+                <label for="rmse">rmse</label>
+                <input type="checkbox" name="featureList" value="spectral_centroid" id="spectral_centroid">
+                <label for="spectral_centroid">spectral_centroid</label>
+                <input type="checkbox" name="featureList" value="spectral_bandwidth" id="spectral_bandwidth">
+                <label for="spectral_bandwidth">spectral_bandwidth</label>
+                <input type="checkbox" name="featureList" value="spectral_rolloff" id="spectral_rolloff">
+                <label for="spectral_rolloff">spectral_rolloff</label><br>
+                <input type="checkbox" name="featureList" value="zero_crossing_rate" id="zero_crossing_rate">
+                <label for="zero_crossing_rate">zero_crossing_rate</label>
+                <input type="checkbox" name="featureList" value="mfcc1" id="mfcc1">
+                <label for="mfcc1">mfcc1</label>
+                <input type="checkbox" name="featureList" value="mfcc2" id="mfcc2">
+                <label for="mfcc2">mfcc2</label>
+                <input type="checkbox" name="featureList" value="mfcc3" id="mfcc3">
+                <label for="mfcc3">mfcc3</label>
+                <input type="checkbox" name="featureList" value="mfcc4" id="mfcc4">
+                <label for="mfcc4">mfcc4</label>
+                <input type="checkbox" name="featureList" value="mfcc5" id="mfcc5">
+                <label for="mfcc5">mfcc5</label>
+                <input type="checkbox" name="featureList" value="mfcc6" id="mfcc6">
+                <label for="mfcc6">mfcc6</label><br>
+                <input type="checkbox" name="featureList" value="mfcc7" id="mfcc7">
+                <label for="mfcc7">mfcc7</label>
+                <input type="checkbox" name="featureList" value="mfcc8" id="mfcc8">
+                <label for="mfcc8">mfcc8</label>
+                <input type="checkbox" name="featureList" value="mfcc9" id="mfcc9">
+                <label for="mfcc9">mfcc9</label>
+                <input type="checkbox" name="featureList" value="mfcc10" id="mfcc10">
+                <label for="mfcc10">mfcc10</label>
+                <input type="checkbox" name="featureList" value="mfcc11" id="mfcc11">
+                <label for="mfcc11">mfcc11</label>
+                <input type="checkbox" name="featureList" value="mfcc12" id="mfcc12">
+                <label for="mfcc12">mfcc12</label>
+                <input type="checkbox" name="featureList" value="mfcc13" id="mfcc13">
+                <label for="mfcc13">mfcc13</label><br>
+                <input type="checkbox" name="featureList" value="mfcc14" id="mfcc14">
+                <label for="mfcc14">mfcc14</label>
+                <input type="checkbox" name="featureList" value="mfcc15" id="mfcc15">
+                <label for="mfcc15">mfcc15</label>
+                <input type="checkbox" name="featureList" value="mfcc16" id="mfcc16">
+                <label for="mfcc16">mfcc16</label>
+                <input type="checkbox" name="featureList" value="mfcc17" id="mfcc17">
+                <label for="mfcc17">mfcc17</label>
+                <input type="checkbox" name="featureList" value="mfcc18" id="mfcc18">
+                <label for="mfcc18">mfcc18</label>
+                <input type="checkbox" name="featureList" value="mfcc19" id="mfcc19">
+                <label for="mfcc19">mfcc19</label>
+                <input type="checkbox" name="featureList" value="mfcc20" id="mfcc20">
+                <label for="mfcc20">mfcc20</label>
+            </div>
+            <a data-toggle="modal" data-target="#myModal"><b>Note</b></a>
+            <br><br>
+            <input type="submit" value="Submit" class="button" onclick="$('#loading').show();$('#box1').hide();$('#box2').hide()"/>
+        </form>
+        <button onclick="history.back()" class="button" style="margin-left: 82%;">Go Back</button>
+        <br>
+        </div>  
+        <div id="loading" style="display: none; margin-left: -5%; margin-top: -5%;"><img src="../static/loadingGif.gif" alt=""  style="width: 100%;height: 100%; zoom: 0.5;"/><br><p style="margin-left: 29%;">Processing the sound file!!!</p></div>
+        
+  <!-- Modal -->
+    <div class="modal fade" id="myModal" role="dialog">
+        <div class="modal-dialog">
+    
+      <!-- Modal content-->
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title" style="color: red;">Note</h4>
+        </div>
+        <div class="modal-body">
+          <p>The precision of the music genre detection system will widely varry depending on the classifier chosen , the list of features selected and also on the randomness of the test-train split. Dataset used- GTZAN dataset.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+      
+        </div>
+     </div>
+    </div>
+    </body>
+</html>
+

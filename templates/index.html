@@ -2,7 +2,6 @@
 <html>
     <head>
         <title>Genre Detection App</title>
-        <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
         <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
         <style>
             .button {
@@ -39,13 +38,16 @@
     <body style="display: flex; flex-wrap: nowrap;justify-content:center; margin-top: 10%;">
         <div style="margin-top: 6%;" id="box1">
         <h1>Music Genre Detection</h1>
-        <form action="#" method="POST" enctype="multipart/form-data">
+        <form action="" method="POST" enctype="multipart/form-data">
             <p>Upload sound file:</p>
             <input type="file" name="soundFile" class="file"/>
             <input type="submit" value="submit" class="button" onclick="$('#loading').show();$('#box1').hide();$('#box2').hide()"/>
         </form>
         <br>
-        <a href="{{url_for('about')}}" >About </a>
+        <a href="{{url_for('custom_analysis')}}" style="color: darkgreen">Customized Music Genre Detection</a>
+        <br>
+        <br>
+        <a href="{{url_for('about')}}" style="color: blue;" >About</a> 
         </div>
         <div style="margin-left: 10%;" id="box2"> 
             <img src="../static/image_home.jpeg" alt="music image" style="height: 400px; width: 500px;">

@@ -76,6 +76,17 @@
             <source src="{{url_for('static',filename=audioName)}}" >
         </audio>
         <br>
+        <p>Chosen classifier: {{algo}}</p>
+        <p>Chosen sampling rate: {{sRate}}</p>
+        <br>
+        <p>Waveplot:</p>
+        <br>
+        <img src="{{url_for('static',filename=saved_img1)}}">
+        <br>
+        <p>Spectogram:</p>
+        <br>
+        <img src="{{url_for('static',filename=saved_img2)}}">
+        <br>
         <p  style="margin-top: 3%;">Features extracted from {{audioName}} :</p>
         <div style="overflow-x: auto;" class="tab">
             <table style="border: 1px black solid;">
@@ -89,11 +100,65 @@
                     <td style="border: 1px black solid;">{{d}}</td>
                     {% endfor %}
                 </tr>
-                
             </table>
         </div>
+        {% if algo == 'KNeighborsClassifier' %}
+             <br>
+              <br>
+              <div style="overflow-x: auto;" class="tab">
+                  {% for table in f_table %}
+                      {{ titles[loop.index] }}
+                      {{ table|safe }}
+                  {% endfor %}
+              </div>
+             <br>
+             <h1 class="animate__animated animate__fadeInLeft animate__slow" style="color: blue;">Our Prediction :   {{prediction}}</h1>
+        {% endif %}
+        {% if algo == 'LogisticRegression' %}
+             <br>
+              <br>
+              <div style="overflow-x: auto;" class="tab">
+                  {% for table in f_table %}
+                      {{ titles[loop.index] }}
+                      {{ table|safe }}
+                  {% endfor %}
+              </div>
+             <br>
+             <h1 class="animate__animated animate__fadeInLeft animate__slow" style="color: blue;">Our Prediction :   {{prediction}}</h1>
+        {% endif %}
+        {% if algo == 'SupportVectorMachines(kernel = rbf , poly)' %}
+        <h3>Poly :</h3>
         <br>
+        <div style="overflow-x: auto;" class="tab">
+            {% for table in f_table1 %}
+                {{ titles1[loop.index] }}
+                {{ table|safe }}
+            {% endfor %}
+        </div>
+        <br>
+        <h1 class="animate__animated animate__fadeInLeft animate__slow" style="color: blue;">Our Prediction :   {{prediction1}}</h1>
+        {% endif %}
+        {% if algo == 'SupportVectorMachines(kernel = rbf , poly)' %}
+        <h3>Rbf :</h3>
+        <br>
+        <div style="overflow-x: auto;" class="tab">
+            {% for table in f_table2 %}
+                {{ titles2[loop.index] }}
+                {{ table|safe }}
+            {% endfor %}
+        </div>
+        <br>
+        <h1 class="animate__animated animate__fadeInLeft animate__slow" style="color: blue;">Our Prediction :   {{prediction2}}</h1>
+        {% endif %}
+        {% if algo == 'DecisionTreeClassifier' %}
+        <br>
+        <br>
+        <img src="{{url_for('static',filename=saved_img3)}}" style="height: 100%;width: 100%;overflow-x: scroll;">
+        <br>
+        <br>
+        <p><b>Accuracy : {{acc}}</p>
         <h1 class="animate__animated animate__fadeInLeft animate__slow" style="color: blue;">Our Prediction :   {{prediction}}</h1>
+        {% endif %}
         <p><button onclick="history.back()" class="button">Go Back</button></p>
     </body>
 </html>
