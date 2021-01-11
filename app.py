@@ -177,7 +177,10 @@ def advanced_analysis(audioName,s_rate,cf,fl):
     saved_img2=f'audio_specgram_{audioName}.png'
         
     ''' reading from our training dataset and fitting our test data to our knn model '''    
-    data = pd.read_csv('./Music_Features_dataset(2).csv',skipinitialspace=True,usecols=custom_category)
+    if srate == 22050:
+        data = pd.read_csv('./Music_Features_dataset(2).csv',skipinitialspace=True,usecols=custom_category)
+    else:
+        data = pd.read_csv('./Music_Features_dataset(1).csv',skipinitialspace=True,usecols=custom_category)
     dataset = data[data['label'].isin(['jazz', 'metal','classical','blues','pop'])]
     y = LabelEncoder().fit_transform(dataset.iloc[:,-1])
     scaler=StandardScaler().fit(np.array(dataset.iloc[:, :-1], dtype = float))
