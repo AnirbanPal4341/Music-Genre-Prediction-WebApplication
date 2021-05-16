@@ -411,6 +411,8 @@ def advanced_analysis(audioName,cf):
 @app.route("/create-playlist",methods=["POST","GET"])
 def playlist():
     files=[]
+    shutil.rmtree(bin_folder,ignore_errors = True)
+    os.mkdir(bin_folder)
     if request.method == "POST":
         fileList=[]
         files = request.files.getlist("soundFile")
