@@ -1,0 +1,61 @@
+<html>
+    <head>
+        <title>Music Playlist Creation</title>
+        <style>
+            .button {
+                margin-top: 5px;
+                padding: 10px 16px;
+                text-align: center;
+                text-decoration: none;
+                font-size: 14px;
+                transition-duration: 0.4s;
+                border-radius: 5px;
+                background-color: white;
+                color: black;
+                border: 2px solid #4CAF50;
+            }
+            .button:hover {
+                background-color: #4CAF50; /* Green */
+                color: white;
+                border-radius: 5px;
+                box-shadow: 0 12px 16px 0 rgba(0,0,0,0.2), 0 17px 50px 0 rgba(0,0,0,0.19);
+            }
+            .aud{
+                transition-duration: 0.4s;
+                border-radius: 28px;
+                border: 2px solid #4CAF50;
+                transition-duration: 0.4s;
+                width: 100%;
+            }
+            .aud:hover{
+                box-shadow: 0 12px 16px 0 rgba(0,0,0,0.2), 0 17px 30px 0 rgba(0,0,0,0.15);
+            }
+            @media screen and (max-width: 900px) {
+                .aud{
+                    width: 80%;
+                }
+            }
+        </style>
+    </head>
+    <body style="display: flex; flex-wrap: nowrap;justify-content: left; margin-top: 3%; margin-left: 5%;">
+        <div id="box1">
+            <h1>Playlist Created</h1>
+            <br>
+            {% for x in cat %}
+                <h3>{{x}}: </h3>
+                <br>
+                {% for r in playList %}
+                    {% if x == r[0] %}
+                        <p>{{r[1]}}</p>
+                        <audio controls preload="none" class="aud">
+                            <source src="{{url_for('static',filename=r[1])}}" >
+                        </audio>
+                        <br>
+                    {% endif %}
+                {% endfor %}
+                <br>
+            {% endfor %}
+            <br>
+        </div>
+    </body>
+</html>

@@ -2,6 +2,7 @@
 """
 Created on Tue Jan  5 11:09:40 2021
 @author: Anirban Pal
+@project name: Music Genre Detection System
 
 """
 import os
@@ -10,25 +11,22 @@ import pandas as pd
 import numpy as np
 import librosa
 import librosa.display
-import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn import svm
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.externals.six import StringIO
-import pydotplus
-import matplotlib.image as mpimg
-from sklearn import tree
-from sklearn import metrics
-from sklearn.metrics import classification_report
+import tensorflow.keras as keras
+from keras.models import load_model
 import csv 
+import shutil
 
 app = Flask(__name__)
 
 app_root=os.path.dirname(os.path.abspath(__file__))
 target=os.path.join(app_root,'static')
+bin_folder=os.path.join(target,'bin')
 saved_file="audio.wav"
 saved_csv="UploadedMusic_Features_dataset.csv"
 saved_img1=""
@@ -36,10 +34,12 @@ saved_img2=""
 
 @app.route("/",methods=["POST","GET"])
 def home():  
+    shutil.rmtree(bin_folder,ignore_errors = True)
+    os.mkdir(bin_folder)
     if request.method == "POST":
         file = request.files['soundFile']
         file_name=file.filename
-        destination=f'./static/{file_name}'
+        destination=f'./static/bin/{file_name}'
         file.save(destination)
         return redirect(url_for("analysis",audioName=file_name))
     else:
@@ -54,8 +54,8 @@ def about():
 def analysis(audioName):
     print(audioName)
     ''' creating csv file for our input data and storing the extracted features '''
-    audio_data=f'./static/{audioName}'
-    file = open('./static/UploadedMusic_Features_dataset.csv', 'w', newline='')
+    audio_data=f'./static/bin/{audioName}'
+    file = open('./static/bin/UploadedMusic_Features_dataset.csv', 'w', newline='')
     category=['filename', 'chroma_stft', 'rmse', 'spectral_centroid', 'spectral_bandwidth',
               'spectral_rolloff', 'zero_crossing_rate', 'mfcc1', 'mfcc2', 'mfcc3', 'mfcc4',
               'mfcc5', 'mfcc6', 'mfcc7', 'mfcc8', 'mfcc9', 'mfcc10', 'mfcc11', 'mfcc12',
@@ -75,82 +75,79 @@ def analysis(audioName):
     feature_data = f'{audioName} {np.mean(chroma_stft)} {np.mean(rmse)} {np.mean(spectral_centroid)} {np.mean(spectral_bandwidth)} {np.mean(spectral_rolloff)} {np.mean(zero_crossing_rate)}'    
     for m in mfcc:
         feature_data += f' {np.mean(m)}'
-    file = open('./static/UploadedMusic_Features_dataset.csv', 'a', newline='')
+    file = open('./static/bin/UploadedMusic_Features_dataset.csv', 'a', newline='')
     with file:
         writer = csv.writer(file)
         writer.writerow(feature_data.split())
-        
-    ''' reading from our training dataset and fitting our test data to our knn model '''    
+         
     data = pd.read_csv('./Music_Features_dataset(2).csv')
-    dataset = data[data['label'].isin(['jazz', 'metal','classical','blues','pop'])].drop(['filename'],axis=1)
-    y = LabelEncoder().fit_transform(dataset.iloc[:,-1])
+    model = load_model('MGD_reg_2.h5')
+    dataset = data.drop(['filename','mfcc14','mfcc15','mfcc16','mfcc17','mfcc18','mfcc19','mfcc20'],axis=1)
     scaler=StandardScaler().fit(np.array(dataset.iloc[:, :-1], dtype = float))
-    X=scaler.transform(dataset.iloc[:, :-1])
-    X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.20,random_state=42)
-    knn = KNeighborsClassifier(n_neighbors=5)
-    knn.fit(X_train,y_train)
-    
-    ''' scaling our input data and applying our prediction '''
-    uploaded_data = pd.read_csv('./static/UploadedMusic_Features_dataset.csv')
-    uploaded_dataset = uploaded_data.drop(['filename'],axis=1)
-    detect_audio = scaler.transform(np.array(uploaded_dataset, dtype = float))
-   
-    pred = knn.predict(detect_audio[[0]]) 
+    uploaded_data = pd.read_csv('./static/bin/UploadedMusic_Features_dataset.csv')
+    uploaded__data = uploaded_data.drop(['filename','mfcc14','mfcc15','mfcc16','mfcc17','mfcc18','mfcc19','mfcc20'],axis=1)
+    detect_audio = scaler.transform(np.array(uploaded__data, dtype = float))
+    pred=model.predict_classes(detect_audio)
+    print(pred)
     
     if(pred[0]==0):
         prediction="Blues"
     if(pred[0]==1):
         prediction="Classical"
     if(pred[0]==2):
-        prediction="Jazz"
+        prediction="Country"
     if(pred[0]==3):
-        prediction="Metal"
+        prediction="Disco"
     if(pred[0]==4):
+        prediction="Hiphop"
+    if(pred[0]==5):
+        prediction="Jazz"
+    if(pred[0]==6):
+        prediction="Metal"
+    if(pred[0]==7):
         prediction="Pop"
-          
-    return render_template("analysis.html",audioName=audioName,fd=feature_data.split(),
-                           col=category,prediction=prediction)
-
+    if(pred[0]==8):
+        prediction="Reggae"
+    if(pred[0]==9):
+        prediction="Rock"
+        
+    audioName=f'/bin/{audioName}'   
+    return render_template("analysis.html",prediction=prediction,audioName=audioName,col=category,
+            fd=feature_data.split())
+    
     
 '''custom-analysis'''
 @app.route("/custom-analysis",methods=["POST","GET"])
 def custom_analysis():
+    shutil.rmtree(bin_folder,ignore_errors = True)
+    os.mkdir(bin_folder)
     if request.method == "POST":
         file = request.files['soundFile']
-        s_rate = request.form.get('sr')
         cf = request.form.get('algo')
-        fl = request.form.getlist('featureList')
         file_name=file.filename
-        file.save(f'./static/{file_name}')
-        print(s_rate)
-        print(cf)
-        print(file_name)
-        print(fl)
-        return redirect(url_for("advanced_analysis",audioName=file_name,s_rate=s_rate,cf=cf,fl=fl))
+        file.save(f'./static/bin/{file_name}')
+        return redirect(url_for("advanced_analysis",audioName=file_name,cf=cf))
     else:
         return render_template("custom-analysis.html")
         
 '''advanced-analysis'''
-@app.route("/audio-analysis/<audioName>/<s_rate>/<cf>/<fl>",methods=["POST","GET"])
-def advanced_analysis(audioName,s_rate,cf,fl):
-    print(cf)
+@app.route("/audio-analysis/<audioName>/<cf>",methods=["POST","GET"])
+def advanced_analysis(audioName,cf):
     
     '''generating dataset of uploaded audio file'''
-    audio_data=f'./static/{audioName}'
-    file = open('./static/UploadedMusic_Features_dataset.csv', 'w', newline='')
-    custom_category=fl[2:-2].split("', '")
-    custom_category.append('label')
-    srate=int(s_rate)
-    print(custom_category)
+    audio_data=f'./static/bin/{audioName}'
+    file = open('./static/bin/UploadedMusic_Features_dataset.csv', 'w', newline='')
     category=['filename', 'chroma_stft', 'rmse', 'spectral_centroid', 'spectral_bandwidth', 
               'spectral_rolloff', 'zero_crossing_rate', 'mfcc1', 'mfcc2', 'mfcc3', 'mfcc4', 
               'mfcc5', 'mfcc6', 'mfcc7', 'mfcc8', 'mfcc9', 'mfcc10', 'mfcc11', 'mfcc12',
               'mfcc13', 'mfcc14', 'mfcc15', 'mfcc16', 'mfcc17', 'mfcc18', 'mfcc19', 'mfcc20']
+    
+    '''extracting features'''
     with file:
         writer = csv.writer(file)
         writer.writerow(category)
     
-    x, sr = librosa.load(audio_data, mono=True , duration=30 , sr=srate)
+    x, sr = librosa.load(audio_data, mono=True , duration=30)
     chroma_stft = librosa.feature.chroma_stft(y=x, sr=sr)
     rmse = librosa.feature.rmse(y=x)
     spectral_centroid = librosa.feature.spectral_centroid(y=x, sr=sr)
@@ -161,49 +158,30 @@ def advanced_analysis(audioName,s_rate,cf,fl):
     feature_data = f'{audioName} {np.mean(chroma_stft)} {np.mean(rmse)} {np.mean(spectral_centroid)} {np.mean(spectral_bandwidth)} {np.mean(spectral_rolloff)} {np.mean(zero_crossing_rate)}'    
     for m in mfcc:
         feature_data += f' {np.mean(m)}'
-    file = open('./static/UploadedMusic_Features_dataset.csv', 'a', newline='')
+    file = open('./static/bin/UploadedMusic_Features_dataset.csv', 'a', newline='')
     with file:
         writer = csv.writer(file)
         writer.writerow(feature_data.split())
         
-    
-    '''image generate'''
-    plt.figure(figsize=(14, 5))
-    plt.plot(x)
-    plt.savefig(f'./static/audio_waveplot_{audioName}.png')
-    saved_img1=f'audio_waveplot_{audioName}.png'
-    cmap = plt.get_cmap('plasma')
-    plt.figure(figsize=(14,5))
-    plt.specgram(x, NFFT=2048, Fs=2, Fc=0, noverlap=128, cmap=cmap, sides='default', mode='default', scale='dB');
-    plt.axis('off');
-    plt.savefig(f'./static/audio_specgram_{audioName}.png')
-    saved_img2=f'audio_specgram_{audioName}.png'
-        
-    ''' reading from our training dataset and fitting our test data to our knn model '''  
-    if srate == 22050:
-        data = pd.read_csv('./Music_Features_dataset(2).csv',skipinitialspace=True,usecols=custom_category)
-    else:
-        data = pd.read_csv('./Music_Features_dataset(1).csv',skipinitialspace=True,usecols=custom_category)
-    dataset = data[data['label'].isin(['jazz', 'metal','classical','blues','pop'])]
-    y = LabelEncoder().fit_transform(dataset.iloc[:,-1])
-    scaler=StandardScaler().fit(np.array(dataset.iloc[:, :-1], dtype = float))
-    X=scaler.transform(dataset.iloc[:, :-1])
-    X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.20)
-    
-    ''' scaling our input data and applying our prediction '''
-    uploaded_data = pd.read_csv('./static/UploadedMusic_Features_dataset.csv',
-                                skipinitialspace=True,usecols=fl[2:-2].split("', '"))
-    detect_audio = scaler.transform(np.array(uploaded_data, dtype = float))
        
     if cf == 'knn':
         algo='KNeighborsClassifier'
+        
+        ''' reading from our training dataset and fitting our test data to our knn model '''
+        data = pd.read_csv('./Music_Features_dataset(2).csv')
+        dataset = data.drop(['filename'],axis=1)
+        y = LabelEncoder().fit_transform(dataset.iloc[:,-1])
+        scaler=StandardScaler().fit(np.array(dataset.iloc[:, :-1], dtype = float))
+        X=scaler.transform(dataset.iloc[:, :-1])
+        X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.20,random_state=42)
+    
+        ''' scaling our input data and applying our prediction '''
+        uploaded_data = pd.read_csv('./static/bin/UploadedMusic_Features_dataset.csv')
+        uploaded__data = uploaded_data.drop(['filename'],axis=1)
+        detect_audio = scaler.transform(np.array(uploaded__data, dtype = float))
+       
         knn = KNeighborsClassifier(n_neighbors=5)
         knn.fit(X_train,y_train)
-        
-        pred_dummy = knn.predict(X_test)
-        report=classification_report(y_test,pred_dummy,output_dict=True)
-        df = pd.DataFrame(report).transpose()
-        print(df)
         
         pred = knn.predict(detect_audio[[0]]) 
         if(pred[0]==0):
@@ -211,62 +189,88 @@ def advanced_analysis(audioName,s_rate,cf,fl):
         if(pred[0]==1):
             prediction="Classical"
         if(pred[0]==2):
-            prediction="Jazz"
+            prediction="Country"
         if(pred[0]==3):
-            prediction="Metal"
+            prediction="Disco"
         if(pred[0]==4):
+            prediction="Hiphop"
+        if(pred[0]==5):
+            prediction="Jazz"
+        if(pred[0]==6):
+            prediction="Metal"
+        if(pred[0]==7):
             prediction="Pop"
-            
-        p=uploaded_data[0:1]
-        t=[list(x) for x in p.values]
-        user_feature_values=t[0]
-        return render_template("advanced-analysis.html",prediction=prediction,audioName=audioName,
-                f_table=[df.to_html(classes='tab')],titles=df.columns.values,
-                fd=user_feature_values,col=fl[2:-2].split("', '"),
-                saved_img1=saved_img1,saved_img2=saved_img2,sRate=srate,algo=algo)
+        if(pred[0]==8):
+            prediction="Reggae"
+        if(pred[0]==9):
+            prediction="Rock"
+                    
+        audioName=f'/bin/{audioName}'   
+        return render_template("advanced-analysis.html",prediction=prediction,audioName=audioName,col=category,
+                fd=feature_data.split(),algo=algo)
   
     elif cf == 'lr':
         algo='LogisticRegression'
+        
+        ''' reading from our training dataset and fitting our test data to our knn model '''
+        data = pd.read_csv('./Music_Features_dataset(2).csv')
+        dataset = data.drop(['filename'],axis=1)
+        y = LabelEncoder().fit_transform(dataset.iloc[:,-1])
+        scaler=StandardScaler().fit(np.array(dataset.iloc[:, :-1], dtype = float))
+        X=scaler.transform(dataset.iloc[:, :-1])
+        X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.20,random_state=42)
+    
+        ''' scaling our input data and applying our prediction '''
+        uploaded_data = pd.read_csv('./static/bin/UploadedMusic_Features_dataset.csv')
+        uploaded__data = uploaded_data.drop(['filename'],axis=1)
+        detect_audio = scaler.transform(np.array(uploaded__data, dtype = float))
+       
         LR = LogisticRegression(C=0.01, solver='lbfgs', verbose=0 ,multi_class='auto').fit(X_train,y_train)
       
-        pred_dummy = LR.predict(X_test)
-        report=classification_report(y_test,pred_dummy,output_dict=True)
-        df = pd.DataFrame(report).transpose()
-        print(df)
-        
         pred = LR.predict(detect_audio[[0]]) 
         if(pred[0]==0):
             prediction="Blues"
         if(pred[0]==1):
             prediction="Classical"
         if(pred[0]==2):
-            prediction="Jazz"
+            prediction="Country"
         if(pred[0]==3):
-            prediction="Metal"
+            prediction="Disco"
         if(pred[0]==4):
+            prediction="Hiphop"
+        if(pred[0]==5):
+            prediction="Jazz"
+        if(pred[0]==6):
+            prediction="Metal"
+        if(pred[0]==7):
             prediction="Pop"
+        if(pred[0]==8):
+            prediction="Reggae"
+        if(pred[0]==9):
+            prediction="Rock"
             
-        p=uploaded_data[0:1]
-        t=[list(x) for x in p.values]
-        user_feature_values=t[0]
-        return render_template("advanced-analysis.html",prediction=prediction,audioName=audioName,
-                f_table=[df.to_html(classes='tab')],titles=df.columns.values,
-                fd=user_feature_values,col=fl[2:-2].split("', '"),
-                saved_img1=saved_img1,saved_img2=saved_img2,sRate=srate,algo=algo)
+        audioName=f'/bin/{audioName}'   
+        return render_template("advanced-analysis.html",prediction=prediction,audioName=audioName,col=category,
+                fd=feature_data.split(),algo=algo)
    
     elif cf == 'svm':
          algo="SupportVectorMachines(kernel = rbf , poly)"
+         
+         ''' reading from our training dataset and fitting our test data to our knn model '''
+         data = pd.read_csv('./Music_Features_dataset(2).csv')
+         dataset = data.drop(['filename'],axis=1)
+         y = LabelEncoder().fit_transform(dataset.iloc[:,-1])
+         scaler=StandardScaler().fit(np.array(dataset.iloc[:, :-1], dtype = float))
+         X=scaler.transform(dataset.iloc[:, :-1])
+         X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.20,random_state=42)
+     
+         ''' scaling our input data and applying our prediction '''
+         uploaded_data = pd.read_csv('./static/bin/UploadedMusic_Features_dataset.csv')
+         uploaded__data = uploaded_data.drop(['filename'],axis=1)
+         detect_audio = scaler.transform(np.array(uploaded__data, dtype = float))
+       
          rbf = svm.SVC(kernel='rbf').fit(X_train, y_train)
          poly = svm.SVC(kernel='poly', degree=1).fit(X_train, y_train)
-    
-         poly_pred = poly.predict(X_test)
-         rbf_pred = rbf.predict(X_test)
-         report1=classification_report(y_test, poly_pred,output_dict=True)
-         df1 = pd.DataFrame(report1).transpose()
-         print(df1)
-         report2=classification_report(y_test, rbf_pred,output_dict=True)
-         df2 = pd.DataFrame(report2).transpose()
-         print(df2)
          
          pred1 = poly.predict(detect_audio[[0]])
          if(pred1[0]==0):
@@ -274,11 +278,21 @@ def advanced_analysis(audioName,s_rate,cf,fl):
          if(pred1[0]==1):
             prediction1="Classical"
          if(pred1[0]==2):
-            prediction1="Jazz"
+            prediction1="Country"
          if(pred1[0]==3):
-            prediction1="Metal"
+            prediction1="Disco"
          if(pred1[0]==4):
+            prediction1="Hiphop"
+         if(pred1[0]==5):
+            prediction1="Jazz"
+         if(pred1[0]==6):
+            prediction1="Metal"
+         if(pred1[0]==7):
             prediction1="Pop"
+         if(pred1[0]==8):
+            prediction1="Reggae"
+         if(pred1[0]==9):
+            prediction1="Rock"
             
          pred2 = rbf.predict(detect_audio[[0]])
          if(pred2[0]==0):
@@ -286,29 +300,44 @@ def advanced_analysis(audioName,s_rate,cf,fl):
          if(pred2[0]==1):
             prediction2="Classical"
          if(pred2[0]==2):
-            prediction2="Jazz"
+            prediction2="Country"
          if(pred2[0]==3):
-            prediction2="Metal"
+            prediction2="Disco"
          if(pred2[0]==4):
+            prediction2="Hiphop"
+         if(pred2[0]==5):
+            prediction2="Jazz"
+         if(pred2[0]==6):
+            prediction2="Metal"
+         if(pred2[0]==7):
             prediction2="Pop"
+         if(pred2[0]==8):
+            prediction2="Reggae"
+         if(pred2[0]==9):
+            prediction2="Rock"
           
-         p=uploaded_data[0:1]
-         t=[list(x) for x in p.values]
-         user_feature_values=t[0]
-         return render_template("advanced-analysis.html",algo=algo,prediction1=prediction1,
-                    prediction2=prediction2,audioName=audioName,
-                    f_table1=[df1.to_html(classes='tab')],titles1=df1.columns.values,
-                    f_table2=[df2.to_html(classes='tab')],titles2=df2.columns.values,
-                    fd=user_feature_values,col=fl[2:-2].split("', '"),saved_img1=saved_img1,
-                    saved_img2=saved_img2,sRate=srate)
+         audioName=f'/bin/{audioName}'   
+         return render_template("advanced-analysis.html",prediction1=prediction1,prediction2=prediction2
+                ,audioName=audioName,col=category,fd=feature_data.split(),algo=algo)
     
     elif cf == 'dt':
         algo = "DecisionTreeClassifier"
+        
+        ''' reading from our training dataset and fitting our test data to our knn model '''
+        data = pd.read_csv('./Music_Features_dataset(2).csv')
+        dataset = data.drop(['filename'],axis=1)
+        y = LabelEncoder().fit_transform(dataset.iloc[:,-1])
+        scaler=StandardScaler().fit(np.array(dataset.iloc[:, :-1], dtype = float))
+        X=scaler.transform(dataset.iloc[:, :-1])
+        X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.20,random_state=42)
+    
+        ''' scaling our input data and applying our prediction '''
+        uploaded_data = pd.read_csv('./static/bin/UploadedMusic_Features_dataset.csv')
+        uploaded__data = uploaded_data.drop(['filename'],axis=1)
+        detect_audio = scaler.transform(np.array(uploaded__data, dtype = float))
+       
         musicTree = DecisionTreeClassifier(criterion="entropy", max_depth = 6)
         musicTree.fit(X_train,y_train)
-        
-        predTree = musicTree.predict(X_test)
-        acc= metrics.accuracy_score(y_test, predTree)
         
         pred=musicTree.predict(detect_audio[[0]])
         if(pred[0]==0):
@@ -316,31 +345,63 @@ def advanced_analysis(audioName,s_rate,cf,fl):
         if(pred[0]==1):
             prediction="Classical"
         if(pred[0]==2):
-            prediction="Jazz"
+            prediction="Country"
         if(pred[0]==3):
-            prediction="Metal"
+            prediction="Disco"
         if(pred[0]==4):
+            prediction="Hiphop"
+        if(pred[0]==5):
+            prediction="Jazz"
+        if(pred[0]==6):
+            prediction="Metal"
+        if(pred[0]==7):
             prediction="Pop"
-            
-        p=uploaded_data[0:1]
-        t=[list(x) for x in p.values]
-        user_feature_values=t[0]
+        if(pred[0]==8):
+            prediction="Reggae"
+        if(pred[0]==9):
+            prediction="Rock"
+                    
+        audioName=f'/bin/{audioName}'   
+        return render_template("advanced-analysis.html",prediction=prediction,audioName=audioName,col=category,
+                fd=feature_data.split(),algo=algo)
         
-        dot_data = StringIO()
-        filename = f'musictree_{audioName}.png'
-        featureNames = fl[2:-2].split("', '")
-        targetNames = dataset["label"].unique().tolist()
-        out=tree.export_graphviz(musicTree,feature_names=featureNames, out_file=dot_data, filled=True, 
-                                 special_characters=True,rotate=False)  
-        graph = pydotplus.graph_from_dot_data(dot_data.getvalue())  
-        graph.write_png(f'./static/{filename}')
-        img = mpimg.imread(f'./static/{filename}')
-        plt.figure(figsize=(200, 400))
-        plt.imshow(img,interpolation='nearest')
+    elif cf == 'ann':
+        algo = "Artificial Neural Network"
+        model = load_model('MGD_reg_2.h5')
+        data = pd.read_csv('./Music_Features_dataset(2).csv')
+        dataset = data.drop(['filename','mfcc14','mfcc15','mfcc16','mfcc17','mfcc18','mfcc19','mfcc20'],axis=1)
+        scaler=StandardScaler().fit(np.array(dataset.iloc[:, :-1], dtype = float))
+        uploaded_data = pd.read_csv('./static/bin/UploadedMusic_Features_dataset.csv')
+        uploaded__data = uploaded_data.drop(['filename','mfcc14','mfcc15','mfcc16','mfcc17','mfcc18','mfcc19','mfcc20'],axis=1)
+        detect_audio = scaler.transform(np.array(uploaded__data, dtype = float))
+        pred=model.predict_classes(detect_audio)
+        print(pred)
         
-        return render_template("advanced-analysis.html",prediction=prediction,audioName=audioName,
-                acc=acc,fd=user_feature_values,col=fl[2:-2].split("', '"),
-                saved_img1=saved_img1,saved_img2=saved_img2,sRate=srate,algo=algo,saved_img3=filename)
+        if(pred[0]==0):
+            prediction="Blues"
+        if(pred[0]==1):
+            prediction="Classical"
+        if(pred[0]==2):
+            prediction="Country"
+        if(pred[0]==3):
+            prediction="Disco"
+        if(pred[0]==4):
+            prediction="Hiphop"
+        if(pred[0]==5):
+            prediction="Jazz"
+        if(pred[0]==6):
+            prediction="Metal"
+        if(pred[0]==7):
+            prediction="Pop"
+        if(pred[0]==8):
+            prediction="Reggae"
+        if(pred[0]==9):
+            prediction="Rock"
+                    
+        audioName=f'/bin/{audioName}'   
+        return render_template("advanced-analysis.html",prediction=prediction,audioName=audioName,col=category,
+                fd=feature_data.split(),algo=algo)
+        
         
     else:
          return render_template("custom-analysis.html")
@@ -349,16 +410,20 @@ def advanced_analysis(audioName,s_rate,cf,fl):
 '''playlist creation'''
 @app.route("/create-playlist",methods=["POST","GET"])
 def playlist():
+    files=[]
     if request.method == "POST":
         fileList=[]
         files = request.files.getlist("soundFile")
         for file in files:
             file_name=file.filename
             fileList.append(file_name)
-            file.save(f'./static/{file_name}')
+            file.save(f'./static/bin/{file_name}')
             
         return redirect(url_for("playlist_generation",audioName=fileList))
     else:
+        files=[]
+        shutil.rmtree(bin_folder,ignore_errors = True)
+        os.mkdir(bin_folder)
         return render_template("playlist.html")
     
     
@@ -367,7 +432,7 @@ def playlist():
 def playlist_generation(audioName):
     audioName=audioName[2:-2].split("', '")
     ''' creating csv file for our input data and storing the extracted features '''
-    file = open('./static/UploadedMusic_Features_dataset.csv', 'w', newline='')
+    file = open('./static/bin/UploadedMusic_Features_dataset.csv', 'w', newline='')
     category=['filename', 'chroma_stft', 'rmse', 'spectral_centroid', 'spectral_bandwidth',
               'spectral_rolloff', 'zero_crossing_rate', 'mfcc1', 'mfcc2', 'mfcc3', 'mfcc4',
               'mfcc5', 'mfcc6', 'mfcc7', 'mfcc8', 'mfcc9', 'mfcc10', 'mfcc11', 'mfcc12',
@@ -377,7 +442,7 @@ def playlist_generation(audioName):
         writer.writerow(category)
     
     for audio in audioName:
-        audio_data=f'./static/{audio}'
+        audio_data=f'./static/bin/{audio}'
         x, sr = librosa.load(audio_data, mono=True , duration=30)
         chroma_stft = librosa.feature.chroma_stft(y=x, sr=sr)
         rmse = librosa.feature.rmse(y=x)
@@ -389,28 +454,22 @@ def playlist_generation(audioName):
         feature_data = f'{audio} {np.mean(chroma_stft)} {np.mean(rmse)} {np.mean(spectral_centroid)} {np.mean(spectral_bandwidth)} {np.mean(spectral_rolloff)} {np.mean(zero_crossing_rate)}'    
         for m in mfcc:
             feature_data += f' {np.mean(m)}'
-        file = open('./static/UploadedMusic_Features_dataset.csv', 'a', newline='')
+        file = open('./static/bin/UploadedMusic_Features_dataset.csv', 'a', newline='')
         with file:
             writer = csv.writer(file)
             writer.writerow(feature_data.split())
         
     ''' reading from our training dataset and fitting our test data to our knn model '''    
     data = pd.read_csv('./Music_Features_dataset(2).csv')
-    dataset = data[data['label'].isin(['jazz', 'metal','classical','blues','pop'])].drop(['filename'],axis=1)
-    y = LabelEncoder().fit_transform(dataset.iloc[:,-1])
+    model = load_model('MGD_reg_2.h5')
+    dataset = data.drop(['filename','mfcc14','mfcc15','mfcc16','mfcc17','mfcc18','mfcc19','mfcc20'],axis=1)
     scaler=StandardScaler().fit(np.array(dataset.iloc[:, :-1], dtype = float))
-    X=scaler.transform(dataset.iloc[:, :-1])
-    X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.20,random_state=42)
-    knn = KNeighborsClassifier(n_neighbors=5)
-    knn.fit(X_train,y_train)
-    
-    ''' scaling our input data and applying our prediction '''
-    uploaded_data = pd.read_csv('./static/UploadedMusic_Features_dataset.csv')
-    uploaded_dataset = uploaded_data.drop(['filename'],axis=1)
-    detect_audio = scaler.transform(np.array(uploaded_dataset, dtype = float))
-   
-    pred = knn.predict(detect_audio) 
+    uploaded_data = pd.read_csv('./static/bin/UploadedMusic_Features_dataset.csv')
+    uploaded__data = uploaded_data.drop(['filename','mfcc14','mfcc15','mfcc16','mfcc17','mfcc18','mfcc19','mfcc20'],axis=1)
+    detect_audio = scaler.transform(np.array(uploaded__data, dtype = float))
+    pred=model.predict_classes(detect_audio)
     print(pred)
+    
     
     prediction=[]
     for x in pred:
@@ -419,11 +478,21 @@ def playlist_generation(audioName):
         if(x==1):
             p="Classical"
         if(x==2):
-            p="Jazz"
+            p="Country"
         if(x==3):
-            p="Metal"
+            p="Disco"
         if(x==4):
+            p="Hiphop"
+        if(x==5):
+            p="Jazz"
+        if(x==6):
+            p="Metal"
+        if(x==7):
             p="Pop"
+        if(x==8):
+            p="Reggae"
+        if(x==9):
+            p="Rock"
         prediction.append(p)
         
     cat=[]
@@ -431,7 +500,8 @@ def playlist_generation(audioName):
         if x not in cat:
             cat.append(x)
     print(cat)
-            
+    string='/bin/'
+    audioName=[string + x for x in audioName]        
     playList=[a for a in zip(prediction,audioName)]
     print(playList)
         
